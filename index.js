@@ -35,7 +35,8 @@ function escapeRE(str) { return str.replace(/[.?*+^$[\]\\(){}|-]/g, '\\$&'); }
 var defaultOptions = {
   fuzzyLink: true,
   fuzzyEmail: true,
-  fuzzyIP: false
+  fuzzyIP: false,
+  fuzzyPhone: false
 };
 
 
@@ -170,6 +171,7 @@ function compile(self) {
   re.link_fuzzy       = RegExp(untpl(re.tpl_link_fuzzy), 'i');
   re.link_no_ip_fuzzy = RegExp(untpl(re.tpl_link_no_ip_fuzzy), 'i');
   re.host_fuzzy_test  = RegExp(untpl(re.tpl_host_fuzzy_test), 'i');
+  re.phone_fuzzy  = RegExp(untpl(re.tpl_phone_fuzzy), 'i');
 
   //
   // Compile each schema
@@ -333,7 +335,7 @@ function createMatch(self, shift) {
 /**
  * new LinkifyIt(schemas, options)
  * - schemas (Object): Optional. Additional schemas to validate (prefix/validator)
- * - options (Object): { fuzzyLink|fuzzyEmail|fuzzyIP: true|false }
+ * - options (Object): { fuzzyLink|fuzzyEmail|fuzzyIP|fuzzyPhone: true|false }
  *
  * Creates new linkifier instance with optional additional schemas.
  * Can be called without `new` keyword for convenience.
@@ -362,6 +364,7 @@ function createMatch(self, shift) {
  * - __fuzzyIP__ - allow IPs in fuzzy links above. Can conflict with some texts
  *   like version numbers. Default `false`.
  * - __fuzzyEmail__ - recognize emails without `mailto:` prefix.
+ * - __fuzzyPhone__ - recognize phone numbers without `tel:` prefix.
  *
  **/
 function LinkifyIt(schemas, options) {
@@ -412,7 +415,7 @@ LinkifyIt.prototype.add = function add(schema, definition) {
 
 /** chainable
  * LinkifyIt#set(options)
- * - options (Object): { fuzzyLink|fuzzyEmail|fuzzyIP: true|false }
+ * - options (Object): { fuzzyLink|fuzzyEmail|fuzzyIP:fuzzyPhone: true|false }
  *
  * Set recognition options for links without schema.
  **/
@@ -491,6 +494,20 @@ LinkifyIt.prototype.test = function test(text) {
       }
     }
   }
+
+  //!!! && this.__compiled__['tel:']
+  if (this.__opts__.fuzzyPhone) {
+    if ((ml = text.match(this.re.phone_fuzzy)) !== null) {
+      shift = ml.index + ml[1].length;
+
+      if (this.__index__ < 0 || shift < this.__index__) {
+        this.__schema__     = 'tel:';
+        this.__index__      = shift;
+        this.__last_index__ = ml.index + ml[0].length;
+      }
+    }
+  }
+  //!!!
 
   return this.__index__ >= 0;
 };
@@ -620,6 +637,10 @@ LinkifyIt.prototype.normalize = function normalize(match) {
 
   if (match.schema === 'mailto:' && !/^mailto:/i.test(match.url)) {
     match.url = 'mailto:' + match.url;
+  }
+
+  if (match.schema === 'tel:') {
+    match.url = 'tel:' + match.url;
   }
 };
 
