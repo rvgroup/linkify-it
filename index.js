@@ -109,6 +109,12 @@ var defaultSchemas = {
       }
       return 0;
     }
+  },
+  'tel:': {
+    validate: function (text, pos, self) {
+      // TODO
+      return 0;
+    }
   }
 };
 
@@ -495,10 +501,10 @@ LinkifyIt.prototype.test = function test(text) {
     }
   }
 
-  //!!! && this.__compiled__['tel:']
-  if (this.__opts__.fuzzyPhone) {
+  if (this.__opts__.fuzzyPhone && this.__compiled__['tel:']) {
     if ((ml = text.match(this.re.phone_fuzzy)) !== null) {
-      shift = ml.index + ml[1].length;
+      //shift = ml.index + ml[1].length;
+      shift = ml.index;
 
       if (this.__index__ < 0 || shift < this.__index__) {
         this.__schema__     = 'tel:';
@@ -507,7 +513,6 @@ LinkifyIt.prototype.test = function test(text) {
       }
     }
   }
-  //!!!
 
   return this.__index__ >= 0;
 };
@@ -521,7 +526,7 @@ LinkifyIt.prototype.test = function test(text) {
  * link NOT exists.
  **/
 LinkifyIt.prototype.pretest = function pretest(text) {
-  return this.re.pretest.test(text);
+  return this.re.pretest.test(text) || this.re.phone_fuzzy.test(text);
 };
 
 
